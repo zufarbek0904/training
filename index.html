@@ -1,14 +1,302 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Тренировочный дневник — Personal Workout Diary</title>
+  <meta name="description" content="Персональный дневник тренировок — регистрация, дневные записи, история, профиль и экспорт данных. Клиентская fake-BД на localStorage." />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <header class="app-header" role="banner" aria-label="Заголовок приложения">
+    <div class="container header-inner">
+      <h1 class="logo">Workout Diary</h1>
+      <nav class="top-actions" aria-label="Действия">
+        <button id="btn-logout" class="btn btn-ghost" aria-label="Выйти" hidden>Выйти</button>
+      </nav>
+    </div>
+  </header>
 
-    <script src="app.js"></script>
-    
+  <main class="app-main container" id="app" role="main">
+    <!-- AUTH SECTION: Registration & Login -->
+    <section id="section-auth" class="section" data-section="auth" aria-label="Авторизация и регистрация">
+      <div class="card auth-card">
+        <div class="auth-tabs" role="tablist" aria-label="Форма">
+          <button class="tab active" data-tab="login" role="tab" aria-selected="true">Войти</button>
+          <button class="tab" data-tab="register" role="tab" aria-selected="false">Регистрация</button>
+        </div>
+
+        <div class="auth-forms">
+          <!-- LOGIN -->
+          <form id="form-login" class="auth-form" data-tab-content="login" aria-label="Вход">
+            <label>
+              <span class="label">Email</span>
+              <input id="login-email" type="email" required autocomplete="username" aria-label="Email" />
+            </label>
+
+            <label>
+              <span class="label">Пароль</span>
+              <input id="login-password" type="password" required autocomplete="current-password" aria-label="Пароль" minlength="6" />
+            </label>
+
+            <div class="form-actions">
+              <button type="submit" class="btn">Войти</button>
+            </div>
+            <p class="muted">Нет аккаунта? Переключитесь на вкладку «Регистрация».</p>
+          </form>
+
+          <!-- REGISTER -->
+          <form id="form-register" class="auth-form hidden" data-tab-content="register" aria-label="Регистрация">
+            <label>
+              <span class="label">Имя</span>
+              <input id="reg-name" type="text" required aria-label="Имя" minlength="2" />
+            </label>
+
+            <label>
+              <span class="label">Email</span>
+              <input id="reg-email" type="email" required aria-label="Email" />
+            </label>
+
+            <label>
+              <span class="label">Пароль</span>
+              <input id="reg-password" type="password" required aria-label="Пароль" minlength="6" />
+            </label>
+
+            <label>
+              <span class="label">Возраст</span>
+              <input id="reg-age" type="number" required aria-label="Возраст" min="5" max="120" />
+            </label>
+
+            <label>
+              <span class="label">Рост (см)</span>
+              <input id="reg-height" type="number" required aria-label="Рост" min="50" max="300" />
+            </label>
+
+            <label>
+              <span class="label">Вес (кг)</span>
+              <input id="reg-weight" type="number" required aria-label="Вес" min="20" max="500" step="0.1" />
+            </label>
+
+            <fieldset class="goals-fieldset" aria-label="Цели по умолчанию">
+              <legend>Цели по умолчанию</legend>
+              <label>
+                <span class="label small">Отжимания</span>
+                <input id="goal-pushups" type="number" required min="0" value="100" />
+              </label>
+              <label>
+                <span class="label small">Приседания</span>
+                <input id="goal-situps" type="number" required min="0" value="100" />
+              </label>
+              <label>
+                <span class="label small">Бег (м)</span>
+                <input id="goal-run" type="number" required min="0" value="1000" />
+              </label>
+            </fieldset>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+            </div>
+            <p class="muted">Уже есть аккаунт? Переключитесь на вкладку «Войти».</p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- APP LAYOUT (visible after login) -->
+    <section id="section-app" class="section hidden" data-section="app" aria-label="Приложение">
+      <div class="app-layout">
+        <!-- SIDEBAR / NAV -->
+        <aside class="sidebar" role="navigation" aria-label="Навигация приложения">
+          <div class="profile-mini" aria-hidden="false">
+            <div class="avatar" id="mini-avatar" aria-hidden="true">WD</div>
+            <div class="profile-meta">
+              <div id="mini-name" class="profile-name">Имя</div>
+              <div id="mini-email" class="profile-email muted">email@example.com</div>
+            </div>
+          </div>
+
+          <nav class="main-nav" aria-label="Основная навигация">
+            <button class="nav-btn active" data-show="dashboard" aria-pressed="true">Dashboard</button>
+            <button class="nav-btn" data-show="history" aria-pressed="false">History</button>
+            <button class="nav-btn" data-show="profile" aria-pressed="false">Profile</button>
+            <button class="nav-btn" data-show="settings" aria-pressed="false">Settings</button>
+          </nav>
+
+          <div class="sidebar-footer">
+            <button id="btn-logout-2" class="btn btn-ghost">Выйти</button>
+          </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <div class="content">
+          <!-- Dashboard -->
+          <section id="dashboard" class="panel" data-section="dashboard" aria-label="Панель Сегодняшняя тренировка">
+            <header class="panel-header">
+              <h2>Сегодня — <span id="today-label"></span></h2>
+              <div class="small muted" id="welcome-msg">Добро пожаловать!</div>
+            </header>
+
+            <div class="panel-body">
+              <div class="entry-card card" aria-live="polite">
+                <div class="entry-header">
+                  <h3>Дневная запись</h3>
+                  <div class="entry-date">
+                    <label for="entry-date">Дата</label>
+                    <input id="entry-date" type="date" aria-label="Дата записи" />
+                  </div>
+                </div>
+
+                <div class="goals-grid">
+                  <!-- Goal blocks rendered by JS -->
+                </div>
+
+                <div class="notes-area">
+                  <label for="entry-notes">Заметки</label>
+                  <textarea id="entry-notes" rows="4" placeholder="Добавьте заметку о тренировке..."></textarea>
+                </div>
+
+                <div class="entry-actions">
+                  <button id="save-entry" class="btn btn-primary">Сохранить</button>
+                  <button id="reset-today" class="btn btn-ghost">Сбросить сегодня</button>
+                </div>
+              </div>
+
+              <div class="week-summary card" aria-label="Краткая статистика за 7 дней">
+                <h4>Последние 7 дней</h4>
+                <ul id="week-list" class="week-list" aria-live="polite">
+                  <!-- populated by JS -->
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <!-- History -->
+          <section id="history" class="panel hidden" data-section="history" aria-label="История тренировок">
+            <header class="panel-header">
+              <h2>История</h2>
+              <div class="small muted">Все записи по датам</div>
+            </header>
+
+            <div class="panel-body">
+              <div id="history-list" class="history-list" aria-live="polite">
+                <!-- list items by JS -->
+              </div>
+            </div>
+          </section>
+
+          <!-- Profile -->
+          <section id="profile" class="panel hidden" data-section="profile" aria-label="Профиль">
+            <header class="panel-header">
+              <h2>Профиль</h2>
+              <div class="small muted">Измените свои персональные данные и цели</div>
+            </header>
+
+            <div class="panel-body">
+              <form id="form-profile" class="card profile-card" aria-label="Форма профиля">
+                <label>
+                  <span class="label">Имя</span>
+                  <input id="profile-name" type="text" required />
+                </label>
+
+                <label>
+                  <span class="label">Email (неизменяемый)</span>
+                  <input id="profile-email" type="email" disabled />
+                </label>
+
+                <label>
+                  <span class="label">Возраст</span>
+                  <input id="profile-age" type="number" min="5" max="120" required />
+                </label>
+
+                <label>
+                  <span class="label">Рост (см)</span>
+                  <input id="profile-height" type="number" min="50" max="300" required />
+                </label>
+
+                <label>
+                  <span class="label">Вес (кг)</span>
+                  <input id="profile-weight" type="number" step="0.1" min="20" max="500" required />
+                </label>
+
+                <fieldset class="goals-fieldset" aria-label="Цели">
+                  <legend>Цели</legend>
+                  <label>
+                    <span class="label small">Отжимания</span>
+                    <input id="profile-goal-pushups" type="number" min="0" required />
+                  </label>
+                  <label>
+                    <span class="label small">Приседания</span>
+                    <input id="profile-goal-situps" type="number" min="0" required />
+                  </label>
+                  <label>
+                    <span class="label small">Бег (м)</span>
+                    <input id="profile-goal-run" type="number" min="0" required />
+                  </label>
+                </fieldset>
+
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">Сохранить профиль</button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <!-- Settings -->
+          <section id="settings" class="panel hidden" data-section="settings" aria-label="Настройки">
+            <header class="panel-header">
+              <h2>Настройки</h2>
+              <div class="small muted">Управление данными</div>
+            </header>
+
+            <div class="panel-body settings-body">
+              <div class="card">
+                <h4>Экспорт / Импорт данных</h4>
+                <p class="muted">Скачайте резервную копию или загрузите JSON-файл для восстановления.</p>
+                <div class="form-actions">
+                  <button id="btn-export" class="btn">Экспортировать JSON</button>
+                  <label class="btn btn-ghost file-label">
+                    Импортировать JSON
+                    <input id="import-input" type="file" accept="application/json" hidden />
+                  </label>
+                </div>
+              </div>
+
+              <div class="card">
+                <h4>Сброс данных</h4>
+                <p class="muted">Полная очистка локальной базы данных (удаляет все аккаунты).</p>
+                <div class="form-actions">
+                  <button id="btn-reset-db" class="btn btn-danger">Сбросить всё</button>
+                </div>
+              </div>
+
+              <div class="card">
+                <h4>Аккаунт</h4>
+                <p class="muted">Вы можете выйти из аккаунта.</p>
+                <div class="form-actions">
+                  <button id="btn-logout-3" class="btn btn-ghost">Выйти</button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Mobile bottom nav -->
+      <nav class="mobile-nav" role="navigation" aria-label="Мобильная навигация">
+        <button class="mnav-btn active" data-show="dashboard" aria-pressed="true">🏠</button>
+        <button class="mnav-btn" data-show="history" aria-pressed="false">📜</button>
+        <button class="mnav-btn" data-show="profile" aria-pressed="false">👤</button>
+        <button class="mnav-btn" data-show="settings" aria-pressed="false">⚙️</button>
+      </nav>
+    </section>
+  </main>
+
+  <footer class="app-footer" role="contentinfo" aria-label="Подвал">
+    <div class="container">
+      <small class="muted">© <span id="year"></span> Workout Diary — Клиентский проект</small>
+    </div>
+  </footer>
+
+  <script src="app.js" defer></script>
 </body>
 </html>
